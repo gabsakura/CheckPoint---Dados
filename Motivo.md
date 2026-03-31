@@ -1,0 +1,5 @@
+Nos pegamos a referencia dos dados neste site:https://www.gov.br/inep/pt-br/areas-de-atuacao/avaliacao-e-exames-educacionais/enade vindo diretamente do governo.
+
+O motivo escolhido foi coletar dados sobre as faculdades do Brasil em geral, porém fazer um estudo de caso em um escopo menor, utilizando dados robustos e reais vindos do próprio governo brasileiro. Além de que achamos muito curiosos dados estatísticos sobre escolas em geral, então queríamos fazer um estudo de caso utilizando as universidades brasileiras
+
+O motivo escolhido foi coletar dados sobre as faculdades do Brasil em geral, porém fazer um estudo de caso em um escopo menor, utilizando dados robustos e reais vindos do próprio governo brasileiro. Além de que achamos muito curiosos dados estatísticos sobre escolas em geral, então queríamos fazer um estudo de caso utilizando as universidades brasileiras
