@@ -56,12 +56,16 @@ st.markdown("""
 # ============================================================================
 @st.cache_data
 def carregar_dados(arquivo):
+    # Tenta detectar o delimitador e o encoding de forma mais flexível
     try:
-        df = pd.read_csv(arquivo, encoding='utf-8')
+        # Tenta ler com separador automático (sep=None faz o pandas detectar se é , ou ;)
+        df = pd.read_csv(arquivo, encoding='utf-8', sep=None, engine='python')
     except:
-        df = pd.read_csv(arquivo, encoding='iso-8859-1')
+        arquivo.seek(0) # Reinicia o ponteiro do arquivo para ler novamente
+        df = pd.read_csv(arquivo, encoding='iso-8859-1', sep=None, engine='python')
 
-    df = df.rename(columns={
+    # Dicionário de mapeamento (Verifique se os nomes batem EXATAMENTE com o CSV)
+    mapeamento = {
         'Nome da IES*': 'IES',
         'Sigla da IES*': 'Sigla_IES',
         'Sigla da UF': 'UF',
@@ -71,23 +75,39 @@ def carregar_dados(arquivo):
         'Total de Concluintes Participantes Igual ou Acima da Proficiência': 'Acima_Proficiencia',
         'Percentual de Concluintes Participantes Igual ou Acima da Proficiência ': 'Percentual_Proficiencia',
         'Conceito Enade (Faixa)': 'Faixa_Enade'
-    })
-
-    df['Percentual_Proficiencia'] = df['Percentual_Proficiencia'].astype(str).str.replace('%', '').str.replace(',', '.')
-    df['Percentual_Proficiencia'] = pd.to_numeric(df['Percentual_Proficiencia'], errors='coerce')
+    }
     
-    if df['Percentual_Proficiencia'].max() <= 1.0:
-        df['Percentual_Proficiencia'] = df['Percentual_Proficiencia'] * 100
+    # Renomeia apenas as colunas que existirem para evitar erros
+    df = df.rename(columns=mapeamento)
 
-    df['Faixa_Enade'] = pd.to_numeric(df['Faixa_Enade'], errors='coerce')
-    
-    colunas_num = ['Inscritos', 'Participantes', 'Acima_Proficiencia']
+    # Tratamento de Proficiência
+    if 'Percentual_Proficiencia' in df.columns:
+        df['Percentual_Proficiencia'] = df['Percentual_Proficiencia'].astype(str).str.replace('%', '').str.replace(',', '.')
+        df['Percentual_Proficiencia'] = pd.to_numeric(df['Percentual_Proficiencia'], errors='coerce')
+        
+        if df['Percentual_Proficiencia'].max() <= 1.0:
+            df['Percentual_Proficiencia'] = df['Percentual_Proficiencia'] * 100
+
+    # Conversão de colunas numéricas
+    colunas_num = ['Inscritos', 'Participantes', 'Acima_Proficiencia', 'Faixa_Enade']
     for col in colunas_num:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-    df['Tipo_IES'] = df['Categoria'].apply(lambda x: 'Pública' if 'Pública' in str(x) else 'Privada')
+    # Criação de colunas auxiliares (com verificações de existência)
+    if 'Categoria' in df.columns:
+        df['Tipo_IES'] = df['Categoria'].apply(lambda x: 'Pública' if 'Pública' in str(x) else 'Privada')
+    
+    # Prevenção de erro na coluna Município
+    col_mun = 'Município do Curso' if 'Município do Curso' in df.columns else 'Município'
+    
+    # Criando colunas de exibição com strings seguras
     df['IES_Nome_Completo'] = df['IES'].astype(str) + " (" + df['Sigla_IES'].astype(str) + " - " + df['UF'].astype(str) + ")"
-    df['IES_Campus'] = df['Sigla_IES'].astype(str) + " - " + df['UF'].astype(str) + " (" + df['Município do Curso'].astype(str) + ")"
+    
+    if col_mun in df.columns:
+        df['IES_Campus'] = df['Sigla_IES'].astype(str) + " - " + df['UF'].astype(str) + " (" + df[col_mun].astype(str) + ")"
+    else:
+        df['IES_Campus'] = df['IES_Nome_Completo'] # Fallback caso não ache município
     
     return df
 
@@ -98,10 +118,11 @@ st.sidebar.markdown("### 📁 Fonte de Dados")
 arquivo_carregado = st.sidebar.file_uploader("Upload CSV", type=['csv'], label_visibility="collapsed")
 
 if arquivo_carregado is not None:
+    print(arquivo_carregado)
     df = carregar_dados(arquivo_carregado)
 else:
     try:
-        df = carregar_dados("conceito-enade-2025-medicina.csv")
+        df = carregar_dados("src/data/conceito-enade-2025-medicina(PLANILHA_ENADE).csv")
     except:
         st.error("❌ Faça upload do CSV do Enade.")
         st.stop()
@@ -241,7 +262,7 @@ elif pagina == "📊 Dashboard de Desempenho":
             fig_box.update_layout(height=ALTURA_GRAFICO, margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
             st.plotly_chart(fig_box, use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("", unsafe_allow_html=True)
 
     col3, col4 = st.columns(2)
     with col3:
