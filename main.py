@@ -17,8 +17,7 @@ st.set_page_config(
 # CSS customizado
 st.markdown("""
     <style>
-    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; padding-left: 3rem !important; padding-right: 3rem !important; }
-    .header-title { color: #4F46E5; font-size: 28px; font-weight: bold; margin-top: 40px; margin-bottom: 5px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+    .header-title { color: #4F46E5; font-size: 28px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
     .resumo-box { background-color: #1E3A8A; color: #FFFFFF; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 15px; border-left: 5px solid #818CF8; line-height: 1.6; }
     .contexto-box { background-color: #f1f5f9; color: #334155; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
     .subtexto-ref { font-size: 13px; color: #666; margin-bottom: 15px; }
@@ -261,7 +260,7 @@ elif pagina == "📊 Dashboard de Desempenho":
                                  title="Top 10 Faculdades da Seleção", color='Percentual_Proficiencia', color_continuous_scale='Blues')
             fig_ranking.update_layout(height=ALTURA_GRAFICO, margin=dict(l=0, r=0, t=30, b=0), coloraxis_showscale=False)
             st.plotly_chart(fig_ranking, use_container_width=True)
-
+        
         with col2:
             df_boxplot = df_filtrado.copy()
             df_boxplot['Faixa_Enade_Str'] = df_boxplot['Faixa_Enade'].astype(int).astype(str)
@@ -270,6 +269,7 @@ elif pagina == "📊 Dashboard de Desempenho":
             fig_box.update_layout(height=ALTURA_GRAFICO, margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
             st.plotly_chart(fig_box, use_container_width=True)
 
+        st.markdown("---")
         col3, col4 = st.columns(2)
         with col3:
             df_pie = df_filtrado.groupby('Tipo_IES')['Participantes'].sum().reset_index()
@@ -284,6 +284,7 @@ elif pagina == "📊 Dashboard de Desempenho":
             fig_bar = px.bar(df_medias, x='Tipo_IES', y='Média Proficiência (%)', title="Média de Proficiência por Tipo", text_auto='.1f', color='Tipo_IES')
             fig_bar.update_layout(height=ALTURA_GRAFICO, margin=dict(l=0, r=0, t=30, b=0), showlegend=False)
             st.plotly_chart(fig_bar, use_container_width=True)
+        st.markdown("---")
 
 # ============================================================================
 # PÁGINA 3: TOP 30 E FLOP 30
