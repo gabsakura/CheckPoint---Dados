@@ -107,7 +107,8 @@ if df_raw.empty:
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🧭 Navegação")
 pagina = st.sidebar.radio("Ir para:", [
-    "🏠 Início (História e Similares)", 
+    "📖 As Faculdades e suas performances",       
+    "🏠 Início (História e Similares), 
     "📊 Dashboard de Desempenho", 
     "🏆 Top 30% e Flop 30%"
 ])
@@ -127,6 +128,89 @@ if filtro_tipo != 'Todos':
     df_filtrado = df_filtrado[df_filtrado['Tipo_IES'] == filtro_tipo]
 
 st.markdown("<div class='header-title'>🎓 ENADE 2025 - Análise de Medicina</div>", unsafe_allow_html=True)
+
+
+# ============================================================================
+# PÁGINA 0: STORYTELLING (A JORNADA)
+# ============================================================================
+if pagina == "📖 As Faculdades e suas performances":
+    
+    st.markdown("## 🏥 A Jornada do ENADE Medicina 2025")
+    st.markdown("Bem-vindo(a) ao painel analítico do ENADE 2025. Antes de mergulharmos nos dados, entenda o propósito e a matemática por trás deste dashboard.")
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 1. O que é o ENADE? *(O nosso Data Source)*")
+        st.info("""
+        O Exame Nacional de Desempenho de Estudantes é a ferramenta do MEC para checar se o que as faculdades de Medicina prometem entregar está, de fato, na cabeça dos alunos. 
+        
+        No nosso código, ele entra como o arquivo bruto (CSV). Ele **não avalia o aluno individualmente** para dar uma nota a ele, mas usa o desempenho do conjunto de alunos para avaliar a qualidade e dar uma nota ao curso como um todo.
+        """)
+
+        st.markdown("### 2. O que ele mede? *(As nossas Variáveis)*")
+        st.markdown("""
+        No dashboard, focamos em três métricas cruciais extraídas do mapeamento:
+        * **📚 Conteúdo Programático:** O quanto o aluno domina a base teórica da medicina.
+        * **🩺 Habilidades e Competências:** Se o futuro médico sabe aplicar o conhecimento em problemas práticos.
+        * **🏛️ A "Saúde" da Instituição:** Através da `Faixa_Enade` (de 1 a 5), que categoriza se o curso é excelente ou precisa de intervenção.
+        """)
+
+    with col2:
+        st.markdown("### 3. O Coração do Dashboard: O que é a Proficiência?")
+        st.success("""
+        No código, criamos a coluna `Percentual_Proficiencia`. Mas o que isso significa no mundo real?
+        
+        A Proficiência é o patamar de conhecimento esperado para que um médico exerça a profissão com segurança. No ENADE, existe uma nota de corte técnica. Quem atinge ou ultrapassa esse valor é considerado **"proficiente"**.
+        
+        **A Proficiência no Dashboard:** Ela é o nosso indicador de sucesso (KPI). Quando olhamos para a coluna `Acima_Proficiencia`, estamos contando quantos alunos daquela faculdade realmente estão prontos para o mercado, segundo os critérios do INEP.
+        """)
+
+    st.markdown("---")
+    
+    st.markdown("### 4. A Matemática por trás *(Como calculamos no Código)*")
+    st.markdown("Para transformar dados brutos em insights, o dashboard executa a seguinte lógica (baseada na nossa função de limpeza):")
+    
+    # Fórmula em LaTeX
+    st.markdown("""
+    $$
+    \\text{Percentual de Proficiência} = \\left( \\frac{\\text{Alunos Acima da Proficiência}}{\\text{Total de Alunos Participantes}} \\right) \\times 100
+    $$
+    """)
+    
+    st.markdown("No Python, tratamos a formatação para garantir que o Percentual seja sempre um número comparável, o que nos permite criar rankings:")
+    
+    # Snippet de Código
+    st.code("""
+    # Transformando a métrica em um Ranking Nacional
+    df['Rank_Nacional'] = df['Percentual_Proficiencia'].rank(ascending=False, method='min')
+    """, language="python")
+
+    st.markdown("---")
+
+    st.markdown("### 5. Por que isso é importante?")
+    st.markdown("Por que gastamos linhas de código criando lógicas complexas de Similaridade e Rankings?")
+    
+    # Usando abas (tabs) para deixar a leitura mais dinâmica
+    tab1, tab2, tab3 = st.tabs(["🎯 Escolha de Carreira", "🔍 Transparência Pública", "📈 Melhoria Contínua"])
+    
+    with tab1:
+        st.markdown("**Hospitais e programas de residência olham para esses dados.** Uma faculdade no nosso `Top 30%` sinaliza que o aluno veio de um ambiente de alto rigor acadêmico.")
+    
+    with tab2:
+        st.markdown("Através dos nossos gráficos, conseguimos ver de forma clara se as faculdades **Públicas ou Privadas** estão entregando médicos mais preparados em determinado estado.")
+    
+    with tab3:
+        st.markdown("Quando uma faculdade se encontra no `Flop 30%`, o dashboard funciona como um **alerta vermelho**. Ela pode usar a função de *Faculdades Semelhantes* (calculada pela distância euclidiana) para encontrar instituições parecidas que estão performando melhor e aprender com elas.")
+
+    st.markdown("---")
+    st.markdown("#### 📌 Resumo da Navegação")
+    st.markdown("""
+    * **🏠 Início:** Contextualiza quem é o melhor e o pior, além de cruzar perfis usando Inteligência de Dados.
+    * **📊 Desempenho:** Mostra a "foto" geral da média de proficiência médica no estado ou categoria.
+    * **🏆 Rank:** Separa o joio do trigo, mostrando quais instituições estão no topo da pirâmide educacional em 2025.
+    """)
 
 # ============================================================================
 # PÁGINA 1: INÍCIO - ANÁLISE DE SIMILARES 
