@@ -108,7 +108,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 🧭 Navegação")
 pagina = st.sidebar.radio("Ir para:", [
     "📖 As Faculdades e suas performances",       
-    "🏠 Início (História e Similares), 
+    "🏠 Início (História e Similares)", 
     "📊 Dashboard de Desempenho", 
     "🏆 Top 30% e Flop 30%"
 ])
