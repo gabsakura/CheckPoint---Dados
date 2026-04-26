@@ -129,8 +129,8 @@ if df_raw.empty:
 # ============================================================================
 st.sidebar.markdown("### 🧭 Navegação")
 pagina = st.sidebar.radio("Ir para:", [
-    "📖 As Faculdades e suas performances",       
-    "🏠 Início (História e Similares)", 
+    "📖 O que é a ENADE?",       
+    "🏠 Referência e Comparação", 
     "📊 Dashboard de Desempenho", 
     "🏆 Top e Flop Regionais",
     "🏅 Rank Nacional (Top & Bottom 30)"
@@ -161,7 +161,7 @@ st.markdown("<div class='header-title'>🎓 ENADE 2025 - Análise Regional de Me
 # ============================================================================
 # PÁGINA 0: STORYTELLING 
 # ============================================================================
-if pagina == "📖 As Faculdades e suas performances":
+if pagina == "📖 O que é a ENADE?":
     st.markdown("## 🏥 A Jornada do ENADE Medicina 2025")
     st.markdown("Bem-vindo(a) ao painel analítico do ENADE 2025. Antes de mergulharmos nos dados, entenda o propósito e a matemática por trás deste dashboard.")
     st.markdown("---")
@@ -188,7 +188,7 @@ if pagina == "📖 As Faculdades e suas performances":
 # ============================================================================
 # PÁGINA 1: INÍCIO - ANÁLISE DE SIMILARES 
 # ============================================================================
-elif pagina == "🏠 Início (História e Similares)":
+elif pagina == "🏠 Referência e Comparação":
     st.markdown(f"### 📍 Destaques da Seleção: Região {regiao_1}")
     df_valido_contexto = df_r1.dropna(subset=['Percentual_Proficiencia'])
     
