@@ -132,7 +132,8 @@ pagina = st.sidebar.radio("Ir para:", [
     "📖 As Faculdades e suas performances",       
     "🏠 Início (História e Similares)", 
     "📊 Dashboard de Desempenho", 
-    "🏆 Top 30% e Flop 30%"
+    "🏆 Top e Flop Regionais",
+    "🏅 Rank Nacional (Top & Bottom 30)"
 ])
 
 st.sidebar.markdown("---")
@@ -254,8 +255,11 @@ elif pagina == "🏠 Início (História e Similares)":
                 st.markdown(f"**Referência:** {ref_data['IES_Nome_Completo']} | {tipo_ref} | Alunos: {ref_data['Participantes']}")
                 colunas_exibir = ['IES_Campus', 'Tipo_IES', 'Participantes', 'Acima_Proficiencia', 'Percentual_Proficiencia']
                 
-                # Exibe a tabela otimizada
-                st.dataframe(df_comp.sort_values('Dist').head(5)[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Participantes': '{:.0f}', 'Acima_Proficiencia': '{:.0f}'}).background_gradient(subset=['Percentual_Proficiencia'], cmap='Blues'), use_container_width=True, hide_index=True)
+                # Gradiente travado em 0-100 para não desbotar
+                st.dataframe(df_comp.sort_values('Dist').head(5)[colunas_exibir]
+                             .style.format({'Percentual_Proficiencia': '{:.1f}%', 'Participantes': '{:.0f}', 'Acima_Proficiencia': '{:.0f}'})
+                             .background_gradient(subset=['Percentual_Proficiencia'], cmap='Blues', vmin=0, vmax=100), 
+                             use_container_width=True, hide_index=True)
         except IndexError:
             pass
 
@@ -275,7 +279,7 @@ elif pagina == "📊 Dashboard de Desempenho":
         m4.metric(f"Média {regiao_2}", f"{df_r2['Percentual_Proficiencia'].mean():.1f}%" if not df_r2.empty else "N/A")
 
         st.markdown("---")
-        ALTURA_GRAFICO = 250  # REDUZIDO PARA CABER NA TELA
+        ALTURA_GRAFICO = 250
 
         col1, col2 = st.columns(2)
         with col1:
@@ -310,9 +314,9 @@ elif pagina == "📊 Dashboard de Desempenho":
                 st.plotly_chart(fig_r2, use_container_width=True)
 
 # ============================================================================
-# PÁGINA 3: TOP 30 E FLOP 30 
+# PÁGINA 3: TOP E FLOP REGIONAIS (Gradiente Travado)
 # ============================================================================
-elif pagina == "🏆 Top 30% e Flop 30%":
+elif pagina == "🏆 Top e Flop Regionais":
     st.markdown("### 🏆 Painel de Excelência Regional")
     
     colunas_exibir = ['IES_Campus', 'Tipo_IES', 'Percentual_Proficiencia', 'Rank_Nacional']
@@ -330,13 +334,54 @@ elif pagina == "🏆 Top 30% e Flop 30%":
     if m_r1 is not None:
         st.markdown(f"**📍 {regiao_1}**")
         c1, c2 = st.columns(2)
-        with c1: st.dataframe(m_r1[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'}).background_gradient(cmap='Blues'), use_container_width=True, hide_index=True)
-        with c2: st.dataframe(p_r1[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'}).background_gradient(cmap='Reds'), use_container_width=True, hide_index=True)
+        with c1: 
+            st.dataframe(m_r1[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
+                         .background_gradient(subset=['Percentual_Proficiencia'], cmap='Blues', vmin=0, vmax=100), 
+                         use_container_width=True, hide_index=True)
+        with c2: 
+            # Usando Reds_r (Reverso), notas menores ficam BEM vermelhas, notas maiores (perto de 100) ficariam brancas
+            st.dataframe(p_r1[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
+                         .background_gradient(subset=['Percentual_Proficiencia'], cmap='Reds_r', vmin=0, vmax=100), 
+                         use_container_width=True, hide_index=True)
 
     if regiao_1 != regiao_2:
         m_r2, p_r2, sup_r2, inf_r2 = processar_regiao(df_r2, regiao_2)
         if m_r2 is not None:
             st.markdown(f"**⚖️ {regiao_2}**")
             c3, c4 = st.columns(2)
-            with c3: st.dataframe(m_r2[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'}).background_gradient(cmap='Greens'), use_container_width=True, hide_index=True)
-            with c4: st.dataframe(p_r2[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'}).background_gradient(cmap='Oranges'), use_container_width=True, hide_index=True)
+            with c3: 
+                st.dataframe(m_r2[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
+                             .background_gradient(subset=['Percentual_Proficiencia'], cmap='Greens', vmin=0, vmax=100), 
+                             use_container_width=True, hide_index=True)
+            with c4: 
+                st.dataframe(p_r2[colunas_exibir].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
+                             .background_gradient(subset=['Percentual_Proficiencia'], cmap='Oranges_r', vmin=0, vmax=100), 
+                             use_container_width=True, hide_index=True)
+
+# ============================================================================
+# PÁGINA 4: RANK NACIONAL (Gradiente Travado)
+# ============================================================================
+elif pagina == "🏅 Rank Nacional (Top & Bottom 30)":
+    st.markdown("### 🏅 Elite e Alerta Nacional")
+    st.markdown("Visão completa das 30 instituições com maior e menor proficiência em todo o território nacional.")
+
+    df_nacional = df_raw.dropna(subset=['Percentual_Proficiencia']).copy()
+    colunas_exibir_nacional = ['Rank_Nacional', 'IES_Campus', 'Regiao', 'Percentual_Proficiencia', 'Faixa_Enade']
+
+    tab_top, tab_bottom = st.tabs(["🌟 Top 30 Nacional", "⚠️ Bottom 30 Nacional"])
+
+    with tab_top:
+        top_30 = df_nacional.sort_values('Percentual_Proficiencia', ascending=False).head(30)
+        st.dataframe(
+            top_30[colunas_exibir_nacional].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
+            .background_gradient(subset=['Percentual_Proficiencia'], cmap='Blues', vmin=0, vmax=100),
+            use_container_width=True, hide_index=True, height=800
+        )
+
+    with tab_bottom:
+        bottom_30 = df_nacional.sort_values('Percentual_Proficiencia', ascending=True).head(30)
+        st.dataframe(
+            bottom_30[colunas_exibir_nacional].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
+            .background_gradient(subset=['Percentual_Proficiencia'], cmap='Reds_r', vmin=0, vmax=100),
+            use_container_width=True, hide_index=True, height=800
+        )
