@@ -199,6 +199,9 @@ if df_raw.empty:
 # ============================================================================
 # SIDEBAR - NAVEGAÇÃO E FILTROS 
 # ============================================================================
+
+st.sidebar.image("src/assets/images/logo_enade.png", use_container_width=True)
+
 st.sidebar.markdown("### 🧭 Navegação")
 pagina = st.sidebar.radio("Ir para:", [
     "📖 O que é a ENADE?",       
@@ -464,7 +467,6 @@ elif pagina == "🏅 Rank Nacional (Top & Bottom 30)":
 # ============================================================================
 elif pagina == "📈 Comparação Histórica (2016 e 2025)":
     st.markdown("### 📈 Evolução Histórica do ENADE (2016 → 2025)")
-    st.markdown("Comparação do desempenho ao longo dos anos para identificar evolução, queda ou estabilidade.")
 
     path_2016 = "src/data/conceito-enade-2016-medicina(PLANILHA_ENADE).csv"
 
@@ -489,56 +491,52 @@ elif pagina == "📈 Comparação Histórica (2016 e 2025)":
     # =========================
     # MÉTRICAS GERAIS
     # =========================
-    st.markdown("#### 📊 Visão Geral por Ano")
 
     media_por_ano = df_all.groupby('Ano')['Percentual_Proficiencia'].mean().reset_index()
-
-    col1, col2, col3 = st.columns(3)
 
     anos = sorted(media_por_ano['Ano'].unique())
 
     for i, ano in enumerate(anos):
         valor = media_por_ano[media_por_ano['Ano'] == ano]['Percentual_Proficiencia'].values[0]
-        [col1, col2, col3][i].metric(f"Média {ano}", f"{valor:.1f}%")
 
     st.markdown("---")
 
-    # =========================
-    # EVOLUÇÃO AO LONGO DO TEMPO
-    # =========================
-    st.markdown("#### 📈 Evolução da Proficiência Média")
+    col1, col2 = st.columns(2)
+    with col1:
+        # =========================
+        # EVOLUÇÃO AO LONGO DO TEMPO
+        # =========================
+        st.markdown("#### 📈 Evolução da Proficiência Média")
 
-    import plotly.express as px
+        fig_linha = px.line(
+            media_por_ano,
+            x='Ano',
+            y='Percentual_Proficiencia',
+            markers=True,
+            title="Evolução Nacional da Proficiência"
+        )
 
-    fig_linha = px.line(
-        media_por_ano,
-        x='Ano',
-        y='Percentual_Proficiencia',
-        markers=True,
-        title="Evolução Nacional da Proficiência"
-    )
+        fig_linha.update_layout(height=300)
+        st.plotly_chart(fig_linha, use_container_width=True)
+    with col2:
+        # =========================
+        # COMPARAÇÃO POR REGIÃO
+        # =========================
+        st.markdown("#### 🗺️ Comparação por Região")
 
-    fig_linha.update_layout(height=400)
-    st.plotly_chart(fig_linha, use_container_width=True)
+        df_regiao = df_all.groupby(['Ano', 'Regiao'])['Percentual_Proficiencia'].mean().reset_index()
 
-    # =========================
-    # COMPARAÇÃO POR REGIÃO
-    # =========================
-    st.markdown("#### 🗺️ Comparação por Região")
+        fig_regiao = px.bar(
+            df_regiao,
+            x='Regiao',
+            y='Percentual_Proficiencia',
+            color='Ano',
+            barmode='group',
+            title="Média por Região ao Longo dos Anos"
+        )
 
-    df_regiao = df_all.groupby(['Ano', 'Regiao'])['Percentual_Proficiencia'].mean().reset_index()
-
-    fig_regiao = px.bar(
-        df_regiao,
-        x='Regiao',
-        y='Percentual_Proficiencia',
-        color='Ano',
-        barmode='group',
-        title="Média por Região ao Longo dos Anos"
-    )
-
-    fig_regiao.update_layout(height=400)
-    st.plotly_chart(fig_regiao, use_container_width=True)
+        fig_regiao.update_layout(height=300)
+        st.plotly_chart(fig_regiao, use_container_width=True)
 
     # =========================
     # EVOLUÇÃO POR TIPO (Pública vs Privada)
