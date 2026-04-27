@@ -53,48 +53,117 @@ def carregar_dados(arquivo):
         except:
             return pd.DataFrame()
 
+    # =========================
+    # LIMPEZA DOS NOMES
+    # =========================
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.replace(r'\s+', ' ', regex=True)  # remove múltiplos espaços
+        .str.replace('*', '', regex=False)
+    )
+
+    # =========================
+    # MAPEAMENTO FLEXÍVEL
+    # =========================
     mapeamento = {
-        'Nome da IES*': 'IES',
-        'Sigla da IES*': 'Sigla_IES',
+        'Nome da IES': 'IES',
+        'Sigla da IES': 'Sigla_IES',
         'Sigla da UF': 'UF',
         'Categoria Administrativa': 'Categoria',
         'Nº de Concluintes Inscritos': 'Inscritos',
-        'Nº  de Concluintes Participantes': 'Participantes',
+        'Nº de Concluintes Participantes': 'Participantes',
         'Total de Concluintes Participantes Igual ou Acima da Proficiência': 'Acima_Proficiencia',
-        'Percentual de Concluintes Participantes Igual ou Acima da Proficiência ': 'Percentual_Proficiencia',
-        'Conceito Enade (Faixa)': 'Faixa_Enade'
+        'Percentual de Concluintes Participantes Igual ou Acima da Proficiência': 'Percentual_Proficiencia',
+        'Conceito Enade (Faixa)': 'Faixa_Enade',
+        'Conceito Enade (Contínuo)': 'Nota_Continua'
     }
-    
+
     df = df.rename(columns=mapeamento)
 
-    if 'Percentual_Proficiencia' in df.columns:
-        df['Percentual_Proficiencia'] = df['Percentual_Proficiencia'].astype(str).str.replace('%', '').str.replace(',', '.')
-        df['Percentual_Proficiencia'] = pd.to_numeric(df['Percentual_Proficiencia'], errors='coerce')
-        if df['Percentual_Proficiencia'].max() <= 1.0:
-            df['Percentual_Proficiencia'] *= 100
+    # =========================
+    # GARANTE COLUNAS ESSENCIAIS
+    # =========================
+    for col in ['IES', 'Sigla_IES', 'UF']:
+        if col not in df.columns:
+            df[col] = 'N/A'
+        else:
+            df[col] = df[col].fillna('N/A')
 
-    colunas_num = ['Inscritos', 'Participantes', 'Acima_Proficiencia', 'Faixa_Enade']
+    # =========================
+    # NUMÉRICOS
+    # =========================
+    colunas_num = ['Inscritos', 'Participantes', 'Acima_Proficiencia', 'Faixa_Enade', 'Nota_Continua']
     for col in colunas_num:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
 
+    # =========================
+    # CRIAR MÉTRICA PADRÃO ENTRE ANOS
+    # =========================
+
+    # Caso 2025 (tem dados reais)
+    if 'Acima_Proficiencia' in df.columns and 'Participantes' in df.columns:
+        df['Percentual_Proficiencia'] = (
+            df['Acima_Proficiencia'] / df['Participantes'].replace(0, np.nan)
+        ) * 100
+
+    # Caso 2016 (usa nota contínua)
+    elif 'Nota_Continua' in df.columns:
+        nota = df['Nota_Continua']
+
+        df['Percentual_Proficiencia'] = (
+            (nota - nota.min()) / (nota.max() - nota.min())
+        ) * 100
+
+    else:
+        df['Percentual_Proficiencia'] = np.nan
+
+    # =========================
+    # LIMPEZA FINAL DO %
+    # =========================
+    df['Percentual_Proficiencia'] = (
+        df['Percentual_Proficiencia']
+        .astype(str)
+        .str.replace('%', '')
+        .str.replace(',', '.')
+    )
+    df['Percentual_Proficiencia'] = pd.to_numeric(df['Percentual_Proficiencia'], errors='coerce')
+
+    # =========================
+    # TIPO DE IES
+    # =========================
     if 'Categoria' in df.columns:
-        df['Tipo_IES'] = df['Categoria'].apply(lambda x: 'Pública' if 'Pública' in str(x) else 'Privada')
-    
-    col_mun = 'Município do Curso' if 'Município do Curso' in df.columns else 'Município'
-    
-    for c in ['IES', 'Sigla_IES', 'UF']:
-        if c in df.columns: df[c] = df[c].fillna('N/A')
+        df['Tipo_IES'] = df['Categoria'].apply(
+            lambda x: 'Pública' if 'Pública' in str(x) else 'Privada'
+        )
+    else:
+        df['Tipo_IES'] = 'Não Informado'
 
-    df['IES_Nome_Completo'] = df['IES'].astype(str) + " (" + df['Sigla_IES'].astype(str) + " - " + df['UF'].astype(str) + ")"
-    
+    # =========================
+    # CAMPUS
+    # =========================
+    col_mun = 'Município do Curso' if 'Município do Curso' in df.columns else 'Município'
+
+    df['IES_Nome_Completo'] = (
+        df['IES'].astype(str) + " (" +
+        df['Sigla_IES'].astype(str) + " - " +
+        df['UF'].astype(str) + ")"
+    )
+
     if col_mun in df.columns:
         df[col_mun] = df[col_mun].fillna('N/A')
-        df['IES_Campus'] = df['Sigla_IES'].astype(str) + " - " + df['UF'].astype(str) + " (" + df[col_mun].astype(str) + ")"
+        df['IES_Campus'] = (
+            df['Sigla_IES'].astype(str) + " - " +
+            df['UF'].astype(str) + " (" +
+            df[col_mun].astype(str) + ")"
+        )
     else:
         df['IES_Campus'] = df['IES_Nome_Completo']
-    
-    # Mapeamento Regional
+
+    # =========================
+    # REGIÕES
+    # =========================
     dic_regioes = {
         'AC': 'Norte', 'AP': 'Norte', 'AM': 'Norte', 'PA': 'Norte', 'RO': 'Norte', 'RR': 'Norte', 'TO': 'Norte',
         'AL': 'Nordeste', 'BA': 'Nordeste', 'CE': 'Nordeste', 'MA': 'Nordeste', 'PB': 'Nordeste', 'PE': 'Nordeste', 'PI': 'Nordeste', 'RN': 'Nordeste', 'SE': 'Nordeste',
@@ -102,11 +171,14 @@ def carregar_dados(arquivo):
         'ES': 'Sudeste', 'MG': 'Sudeste', 'RJ': 'Sudeste', 'SP': 'Sudeste',
         'PR': 'Sul', 'RS': 'Sul', 'SC': 'Sul'
     }
-    if 'UF' in df.columns:
-        df['Regiao'] = df['UF'].map(dic_regioes).fillna('Não Informada')
-    
+
+    df['Regiao'] = df['UF'].map(dic_regioes).fillna('Não Informada')
+
+    # =========================
+    # RANK
+    # =========================
     df['Rank_Nacional'] = df['Percentual_Proficiencia'].rank(ascending=False, method='min')
-    
+
     return df
 
 # ============================================================================
@@ -133,7 +205,8 @@ pagina = st.sidebar.radio("Ir para:", [
     "🏠 Referência e Comparação", 
     "📊 Dashboard de Desempenho", 
     "🏆 Top e Flop Regionais",
-    "🏅 Rank Nacional (Top & Bottom 30)"
+    "🏅 Rank Nacional (Top & Bottom 30)",
+    "📈 Comparação Histórica (2016 e 2025)"
 ])
 
 st.sidebar.markdown("---")
@@ -314,7 +387,7 @@ elif pagina == "📊 Dashboard de Desempenho":
                 st.plotly_chart(fig_r2, use_container_width=True)
 
 # ============================================================================
-# PÁGINA 3: TOP E FLOP REGIONAIS (Gradiente Travado)
+# PÁGINA 3: TOP E FLOP REGIONAIS
 # ============================================================================
 elif pagina == "🏆 Top e Flop Regionais":
     st.markdown("### 🏆 Painel de Excelência Regional")
@@ -359,7 +432,7 @@ elif pagina == "🏆 Top e Flop Regionais":
                              use_container_width=True, hide_index=True)
 
 # ============================================================================
-# PÁGINA 4: RANK NACIONAL (Gradiente Travado)
+# PÁGINA 4: RANK NACIONAL
 # ============================================================================
 elif pagina == "🏅 Rank Nacional (Top & Bottom 30)":
     st.markdown("### 🏅 Elite e Alerta Nacional")
@@ -385,3 +458,103 @@ elif pagina == "🏅 Rank Nacional (Top & Bottom 30)":
             .background_gradient(subset=['Percentual_Proficiencia'], cmap='Reds_r', vmin=0, vmax=100),
             use_container_width=True, hide_index=True, height=800
         )
+
+# ============================================================================
+# PÁGINA 5: COMPARAÇÃO HISTÓRICA ENTRE ANOS
+# ============================================================================
+elif pagina == "📈 Comparação Histórica (2016 e 2025)":
+    st.markdown("### 📈 Evolução Histórica do ENADE (2016 → 2025)")
+    st.markdown("Comparação do desempenho ao longo dos anos para identificar evolução, queda ou estabilidade.")
+
+    path_2016 = "src/data/conceito-enade-2016-medicina(PLANILHA_ENADE).csv"
+
+    # Carregamento
+    df_2016 = carregar_dados(path_2016)
+    df_2025 = carregar_dados(caminho_arquivo)
+
+    # Adiciona coluna de ano
+    df_2016['Ano'] = 2016
+    df_2025['Ano'] = 2025
+
+    # Junta tudo
+    df_all = pd.concat([df_2016, df_2025], ignore_index=True)
+
+    if df_all.empty:
+        st.error("Erro ao carregar dados históricos.")
+        st.stop()
+
+    # Remove vazios
+    df_all = df_all.dropna(subset=['Percentual_Proficiencia'])
+
+    # =========================
+    # MÉTRICAS GERAIS
+    # =========================
+    st.markdown("#### 📊 Visão Geral por Ano")
+
+    media_por_ano = df_all.groupby('Ano')['Percentual_Proficiencia'].mean().reset_index()
+
+    col1, col2, col3 = st.columns(3)
+
+    anos = sorted(media_por_ano['Ano'].unique())
+
+    for i, ano in enumerate(anos):
+        valor = media_por_ano[media_por_ano['Ano'] == ano]['Percentual_Proficiencia'].values[0]
+        [col1, col2, col3][i].metric(f"Média {ano}", f"{valor:.1f}%")
+
+    st.markdown("---")
+
+    # =========================
+    # EVOLUÇÃO AO LONGO DO TEMPO
+    # =========================
+    st.markdown("#### 📈 Evolução da Proficiência Média")
+
+    import plotly.express as px
+
+    fig_linha = px.line(
+        media_por_ano,
+        x='Ano',
+        y='Percentual_Proficiencia',
+        markers=True,
+        title="Evolução Nacional da Proficiência"
+    )
+
+    fig_linha.update_layout(height=400)
+    st.plotly_chart(fig_linha, use_container_width=True)
+
+    # =========================
+    # COMPARAÇÃO POR REGIÃO
+    # =========================
+    st.markdown("#### 🗺️ Comparação por Região")
+
+    df_regiao = df_all.groupby(['Ano', 'Regiao'])['Percentual_Proficiencia'].mean().reset_index()
+
+    fig_regiao = px.bar(
+        df_regiao,
+        x='Regiao',
+        y='Percentual_Proficiencia',
+        color='Ano',
+        barmode='group',
+        title="Média por Região ao Longo dos Anos"
+    )
+
+    fig_regiao.update_layout(height=400)
+    st.plotly_chart(fig_regiao, use_container_width=True)
+
+    # =========================
+    # EVOLUÇÃO POR TIPO (Pública vs Privada)
+    # =========================
+    st.markdown("#### 🏛️ Pública vs Privada ao Longo do Tempo")
+
+    df_tipo = df_all.groupby(['Ano', 'Tipo_IES'])['Percentual_Proficiencia'].mean().reset_index()
+
+    fig_tipo = px.line(
+        df_tipo,
+        x='Ano',
+        y='Percentual_Proficiencia',
+        color='Tipo_IES',
+        markers=True,
+        title="Evolução por Tipo de Instituição"
+    )
+
+    fig_tipo.update_layout(height=400)
+    st.plotly_chart(fig_tipo, use_container_width=True)
