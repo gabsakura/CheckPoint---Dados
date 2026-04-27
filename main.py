@@ -169,7 +169,7 @@ def carregar_dados(arquivo):
         'AL': 'Nordeste', 'BA': 'Nordeste', 'CE': 'Nordeste', 'MA': 'Nordeste', 'PB': 'Nordeste', 'PE': 'Nordeste', 'PI': 'Nordeste', 'RN': 'Nordeste', 'SE': 'Nordeste',
         'DF': 'Centro-Oeste', 'GO': 'Centro-Oeste', 'MT': 'Centro-Oeste', 'MS': 'Centro-Oeste',
         'ES': 'Sudeste', 'MG': 'Sudeste', 'RJ': 'Sudeste', 'SP': 'Sudeste',
-        'PR': 'Sul', 'RS': 'Sul', 'SC': 'Sul'
+        'PR': 'Sul', 'RS': 'Sul', 'SC': 'Sul',
     }
 
     df['Regiao'] = df['UF'].map(dic_regioes).fillna('Não Informada')
@@ -206,30 +206,43 @@ st.sidebar.markdown("### 🧭 Navegação")
 pagina = st.sidebar.radio("Ir para:", [
     "📖 O que é a ENADE?",       
     "🏠 Referência e Comparação", 
-    "📊 Dashboard de Desempenho", 
     "🏆 Top e Flop Regionais",
     "🏅 Rank Nacional (Top & Bottom 30)",
+    "📊 Dashboard de Desempenho", 
     "📈 Comparação Histórica (2016 e 2025)"
 ])
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🗺️ Comparativo Regional")
+st.sidebar.markdown("### 🗺️ Filtros de Análise")
 
-todas_regioes = sorted(df_raw['Regiao'].dropna().unique().tolist())
-idx_se = todas_regioes.index("Sudeste") if "Sudeste" in todas_regioes else 0
-idx_ne = todas_regioes.index("Nordeste") if "Nordeste" in todas_regioes else (1 if len(todas_regioes)>1 else 0)
+# Criamos a lista de opções incluindo "Todas"
+opcoes_regioes = ['Todas'] + sorted(df_raw['Regiao'].dropna().unique().tolist())
 
-regiao_1 = st.sidebar.selectbox("🎯 Região Principal (R1):", todas_regioes, index=idx_se)
-regiao_2 = st.sidebar.selectbox("⚖️ Região Comparação (R2):", todas_regioes, index=idx_ne)
+# Seleção das Regiões
+regiao_1 = st.sidebar.selectbox("🎯 Região Principal (R1):", opcoes_regioes, index=0) # Index 0 é "Todas"
+regiao_2 = st.sidebar.selectbox("⚖️ Região Comparação (R2):", opcoes_regioes, index=2 if len(opcoes_regioes) > 2 else 0)
+
 filtro_tipo = st.sidebar.selectbox("Tipo de IES:", ['Todos'] + sorted(df_raw['Tipo_IES'].dropna().unique().tolist()))
 
-df_r1 = df_raw[df_raw['Regiao'] == regiao_1].copy()
-df_r2 = df_raw[df_raw['Regiao'] == regiao_2].copy()
+# --- LÓGICA DE FILTRAGEM DINÂMICA ---
+# Filtro para Região 1
+if regiao_1 == 'Todas':
+    df_r1 = df_raw.copy()
+else:
+    df_r1 = df_raw[df_raw['Regiao'] == regiao_1].copy()
 
+# Filtro para Região 2
+if regiao_2 == 'Todas':
+    df_r2 = df_raw.copy()
+else:
+    df_r2 = df_raw[df_raw['Regiao'] == regiao_2].copy()
+
+# Aplica filtro de tipo (Pública/Privada) em ambos
 if filtro_tipo != 'Todos':
     df_r1 = df_r1[df_r1['Tipo_IES'] == filtro_tipo]
     df_r2 = df_r2[df_r2['Tipo_IES'] == filtro_tipo]
 
+# DataFrame concatenado para os gráficos comparativos
 df_comparativo = pd.concat([df_r1, df_r2])
 
 st.markdown("<div class='header-title'>🎓 ENADE 2025 - Análise Regional de Medicina</div>", unsafe_allow_html=True)
@@ -437,17 +450,17 @@ elif pagina == "🏆 Top e Flop Regionais":
 # ============================================================================
 # PÁGINA 4: RANK NACIONAL
 # ============================================================================
-elif pagina == "🏅 Rank Nacional (Top & Bottom 30)":
+elif pagina == "🏅 Rank Nacional (Top & Bottom 30%)":
     st.markdown("### 🏅 Elite e Alerta Nacional")
-    st.markdown("Visão completa das 30 instituições com maior e menor proficiência em todo o território nacional.")
+    st.markdown("Visão completa dos 30% das instituições com maior e menor proficiência em todo o território nacional.")
 
     df_nacional = df_raw.dropna(subset=['Percentual_Proficiencia']).copy()
     colunas_exibir_nacional = ['Rank_Nacional', 'IES_Campus', 'Regiao', 'Percentual_Proficiencia', 'Faixa_Enade']
 
-    tab_top, tab_bottom = st.tabs(["🌟 Top 30 Nacional", "⚠️ Bottom 30 Nacional"])
+    tab_top, tab_bottom = st.tabs(["🌟 Top 30% Nacional", "⚠️ Bottom 30% Nacional"])
 
     with tab_top:
-        top_30 = df_nacional.sort_values('Percentual_Proficiencia', ascending=False).head(30)
+        top_30 = df_nacional.sort_values('Percentual_Proficiencia', ascending=False).head(105)
         st.dataframe(
             top_30[colunas_exibir_nacional].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
             .background_gradient(subset=['Percentual_Proficiencia'], cmap='Blues', vmin=0, vmax=100),
@@ -455,7 +468,7 @@ elif pagina == "🏅 Rank Nacional (Top & Bottom 30)":
         )
 
     with tab_bottom:
-        bottom_30 = df_nacional.sort_values('Percentual_Proficiencia', ascending=True).head(30)
+        bottom_30 = df_nacional.sort_values('Percentual_Proficiencia', ascending=True).head(105)
         st.dataframe(
             bottom_30[colunas_exibir_nacional].style.format({'Percentual_Proficiencia': '{:.1f}%', 'Rank_Nacional': '{:.0f}'})
             .background_gradient(subset=['Percentual_Proficiencia'], cmap='Reds_r', vmin=0, vmax=100),
