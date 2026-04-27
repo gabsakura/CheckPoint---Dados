@@ -205,9 +205,9 @@ st.sidebar.image("src/assets/images/logo_enade.png", use_container_width=True)
 st.sidebar.markdown("### 🧭 Navegação")
 pagina = st.sidebar.radio("Ir para:", [
     "📖 O que é a ENADE?",       
-    "🏠 Referência e Comparação", 
+    "🏠 Referência e Comparação",
+    "🏅 Rank Nacional (Top & Bottom 30%)", 
     "🏆 Top e Flop Regionais",
-    "🏅 Rank Nacional (Top & Bottom 30%)",
     "📊 Dashboard de Desempenho", 
     "📈 Comparação Histórica (2016 e 2025)"
 ])
