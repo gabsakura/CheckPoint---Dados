@@ -316,16 +316,16 @@ elif pagina == "🏠 Referência e Comparação":
 
     st.markdown("---")
     st.markdown(f"#### 🔍 Instituições Semelhantes ({regiao_1})")
-    
-    col1, col2 = st.columns([2, 1])
+
+    col1, col2 = st.columns([2,1])
     with col1:
         lista_faculdades = sorted(df_r1['IES_Nome_Completo'].dropna().unique().tolist())
         faculdade_ref = st.selectbox(f"Selecione a base:", lista_faculdades) if lista_faculdades else None
     with col2:
         tipo_comparacao = st.radio("Filtro Comparativo:", ["Todas da Região", "Mesma Categoria", "Categoria Oposta"])
-
-    df_sim = df_r1.copy().dropna(subset=['Participantes', 'Acima_Proficiencia'])
     
+    df_sim = df_r1.copy().dropna(subset=['Participantes', 'Acima_Proficiencia'])
+
     if len(df_sim) > 0 and faculdade_ref:
         df_sim['Part_norm'] = (df_sim['Participantes'] - df_sim['Participantes'].mean()) / df_sim['Participantes'].std()
         df_sim['Aprov_norm'] = (df_sim['Acima_Proficiencia'] - df_sim['Acima_Proficiencia'].mean()) / df_sim['Acima_Proficiencia'].std()
@@ -341,7 +341,7 @@ elif pagina == "🏠 Referência e Comparação":
                 st.warning("Poucas faculdades para comparação neste filtro.")
             else:
                 df_comp['Dist'] = np.sqrt((df_comp['Part_norm'] - ref_data['Part_norm'])**2 + (df_comp['Aprov_norm'] - ref_data['Aprov_norm'])**2)
-                st.markdown(f"**Referência:** {ref_data['IES_Nome_Completo']} | {tipo_ref} | Alunos: {ref_data['Participantes']}")
+                st.markdown(f"**Referência:** {ref_data['IES_Nome_Completo']} | {tipo_ref} | Alunos: {ref_data['Participantes']} | Acima da Proficiência: {ref_data["Acima_Proficiencia"]:.0f} | Percentual de Proficiência: {ref_data['Percentual_Proficiencia']:.1f}%")
                 colunas_exibir = ['IES_Campus', 'Tipo_IES', 'Participantes', 'Acima_Proficiencia', 'Percentual_Proficiencia']
                 
                 # Gradiente travado em 0-100 para não desbotar
